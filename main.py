@@ -58,7 +58,7 @@ if option == "Take Attendance":
         person_info = []
         for e in embeddings:
             result = person.search(
-                embeddings[0],
+                e,
                 index_name=COSIN,
                 field=SEARCH_FIELD
             )
