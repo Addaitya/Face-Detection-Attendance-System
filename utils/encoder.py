@@ -13,7 +13,7 @@ class Encoder:
         except Exception as e:
             print(f"Unable to load file: \n{e}")
     
-    def _get_faceboxes(self, img):
+    def get_faceboxes(self, img):
         '''
         Return list of face bounding box coordinates with eye coordinates
 
@@ -55,7 +55,7 @@ class Encoder:
         return faces
 
     def preprocess(self, img):
-        faceboxes = self._get_faceboxes(img)
+        faceboxes = self.get_faceboxes(img)
         face_imgs = self._resize_imgs(img, faceboxes)
         return face_imgs
     
