@@ -22,7 +22,7 @@ This project is an attendance management system that leverages facial recognitio
 The architecture of the project is shown below:
 
 ### 1. **Register Person**:
-   - The face of each person is captured and an embedding (a unique numerical vector) is generated.
+   - The face of each person is captured and an embedding (numerical vector) is generated using MobileNet model.
    - This embedding, along with the person's information, is stored in the database.
 
 ### 2. **Take Attendance**:
