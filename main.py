@@ -95,22 +95,24 @@ elif option == "Register Student":
         img_canvas.empty()
 
     if st.button("Register"):
-        if img_file_buffer is not None and student_name and student_id:
-            progress_giver2 = st.empty()
-            progress_giver2.text("Processing...")
-            img_array = np.array(bytearray(img_file_buffer.read()), dtype=np.uint8)
-            new_img = cv2.imdecode(img_array, 1)
-            new_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2RGB)
-
-            embeddings = ecd.encode(new_img)
-
-            person_data = {
-                "name": student_name,
-                "student_id": student_id,
-                "embedding": embeddings[0]
-            }
-            res = person.add_person(person_data)
-            progress_giver2.text("Registeration Successful")
-
+        if  img_file_buffer is not None and student_name and student_id:
+            if !person.check_person(student_id):
+                progress_giver2 = st.empty()
+                progress_giver2.text("Processing...")
+                img_array = np.array(bytearray(img_file_buffer.read()), dtype=np.uint8)
+                new_img = cv2.imdecode(img_array, 1)
+                new_img = cv2.cvtColor(new_img, cv2.COLOR_BGR2RGB)
+    
+                embeddings = ecd.encode(new_img)
+    
+                person_data = {
+                    "name": student_name,
+                    "student_id": student_id,
+                    "embedding": embeddings[0]
+                }
+                res = person.add_person(person_data)
+                progress_giver2.text("Registeration Successful")
+            else:
+                st.write("You are already registered.")
         else:
             st.write("Please provide all the required information.")
