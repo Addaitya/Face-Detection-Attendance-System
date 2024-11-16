@@ -59,7 +59,7 @@ class PersonCollection:
         except Exception as e:
             print(f'Error in searching: \n{e}')
 
-class Attendence:
+class Attendance:
     def __init__(self, uri:str, *, db_name:str='Face', collection_name:str='Attendence'):
         try:
             self.client = MongoClient(uri)
@@ -103,7 +103,7 @@ class Attendence:
         except Exception as e:
             print(f"Error in add_attendence:\n {e}")
 
-    def fetch_attendence(self, student_id:str, n_days:int=7, *, curr_datetime=datetime.now()):
+    def fetch_attendance(self, student_id:str, n_days:int=7, *, curr_datetime=datetime.now()):
         '''
         Returns last n days attendence, not current day is counted in the n days. It also returns percentage of attendence taking n is total 
         '''
