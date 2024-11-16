@@ -4,6 +4,7 @@ import cv2
 import streamlit as st
 import numpy as np
 import pandas as pd
+import datetime
 load_dotenv()
 URI = os.getenv('DB_URI')
 COSIN = os.getenv('COSIN_INDEX')
@@ -19,7 +20,7 @@ ecd = Encoder()
 # Streamlit app
 st.title("Attendance System")
 # Sidebar options
-option = st.sidebar.selectbox("Choose an option", ["Take Attendance", "Register Student"])
+option = st.sidebar.selectbox("Choose an option", ["Take Attendance", "Register Student", "View Attendance"])
 
 if option == "Take Attendance":
     st.header("Take Attendance")
@@ -72,7 +73,23 @@ if option == "Take Attendance":
         progress_giver.empty()
         df = pd.DataFrame(person_info)
         st.table(df)
-
+        if st.radio("Select the date", ["Today", "Custom"]) == "Custom":
+            custom_date=st.input("Enter the date", type="date")
+            df["date"] = custom_date
+        else:
+            df["date"] = datetime.datetime.now().date()
+        if st.button("Save Attendance"):
+            from utils.db import Attendence
+            attendance= Attendence(URI)
+            for i in range(len(df)):
+                if not attendance.check_one(df["student_id"].values[i], df["date"].values[i]):
+                    attendance.add_many(df["student_id"].values[i], df["date"].values[i])
+                else:
+                    st.write(f"Attendance already taken for {df['name'].values[i]}")
+            st.write("Attendance saved successfully!")
+    else:
+        st.write("Please take a picture first")
+        
 elif option == "Register Student":
     student_name = st.text_input("Enter student name", key="name")
     student_id = st.text_input("Enter student ID", key="id")
@@ -96,7 +113,7 @@ elif option == "Register Student":
 
     if st.button("Register"):
         if  img_file_buffer is not None and student_name and student_id:
-            if !person.check_person(student_id):
+            if not person.check_person(student_id):
                 progress_giver2 = st.empty()
                 progress_giver2.text("Processing...")
                 img_array = np.array(bytearray(img_file_buffer.read()), dtype=np.uint8)
@@ -116,3 +133,15 @@ elif option == "Register Student":
                 st.write("You are already registered.")
         else:
             st.write("Please provide all the required information.")
+            
+elif option == "View Attendance":
+    st.header("View Attendance")
+    student_id = st.text_input("Enter student ID")
+    if st.radio("Select the number of days", ["7"]) == "7":
+        n_days = 7
+    if st.button("Search"):
+        from utils.db import Attendence
+        attendance = Attendence(URI)
+        df,percent = attendance.fetch_attendence(student_id, n_days)
+        st.table(df)
+        st.write(f"Attendance percentage: {percent}")
