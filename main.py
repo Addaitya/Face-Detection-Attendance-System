@@ -74,7 +74,7 @@ if option == "Take Attendance":
         df = pd.DataFrame(person_info)
         st.table(df)
         if st.radio("Select the date", ["Today", "Custom"]) == "Custom":
-            custom_date=st.input("Enter the date", type="date")
+            custom_date=st.date_input("Enter the date", value=datetime.datetime.now().date())
             df["date"] = custom_date
         else:
             df["date"] = datetime.datetime.now().date()
