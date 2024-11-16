@@ -18,6 +18,12 @@ class PersonCollection:
         person = {key:person[key] for key in keys}
         return self.collection.insert_one(person)
 
+    def check_person(self, student_id: str)->bool:
+        cnt = self.collection.count_documents({"student_id": student_id})
+        if cnt:
+            return True
+        return False
+
     def search(self, embedding:list[int], index_name:str, field: str):
         '''
         Do vector search to find most relevant face
