@@ -46,5 +46,5 @@ pip install -r requirements.txt
 ```
 
 ```
-streamlit run main.py
+streamlit run view_attendance.py
 ```
