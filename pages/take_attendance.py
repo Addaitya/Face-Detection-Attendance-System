@@ -24,83 +24,92 @@ st.set_page_config(
     page_icon='📸'
 )
 
-st.header("Take Attendance")
 
-img_file_buffer = st.camera_input("Take a picture")
-img_canvas1 = st.empty()
-img1 = None
-face_boxes = None
 
-if img_file_buffer:
-    bytes_data = img_file_buffer.getvalue()
-    img1 = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
-    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+def handle_check(img_file_buffer):
+    if img_file_buffer:
+        progress_giver.text("Processing...")
+        bytes_data = img_file_buffer.getvalue()
+        img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    face_boxes = ecd.get_faceboxes(img1)
-    
+        embeddings = ecd.encode(img)
+        person_info = []
+        for e in embeddings:
+            result = person.search(
+                e,
+                index_name=COSIN,
+                field=SEARCH_FIELD
+            )
+            if result:
+                person_info.append(result[0])
+            else:
+                person_info.append(None)
+        
+        progress_giver.empty()
+        st.session_state['attendees'] = person_info
+        st.session_state['submit_disable'] = False
+        
 
-    for x,y,w,h in face_boxes:
-        cv2.rectangle(img1, (x,y), (x+w, y+h), color=(0, 255, 0), thickness=2)
-    
-    img_canvas1.image(img1, caption="Confirm faces")
-else:
-    img_canvas1.empty()
+    else:
+        st.error("Please Take picture first")
 
-if "person_info" not in st.session_state:
-    st.session_state.person_info = []
-if "choose_date" not in st.session_state:
-    st.session_state.choose_date = datetime.today().date()
+def handle_camera():
+    if st.session_state['camera']:
+        bytes_data = st.session_state['camera'].getvalue()
+        img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-# Check Button Logic
-check_btn = st.button("Check")
-if check_btn and img_file_buffer is not None:
-    progress_giver = st.empty()
-    progress_giver.text("Processing...")
-    
-    img_array = np.array(bytearray(img_file_buffer.read()), dtype=np.uint8)
-    img1 = cv2.imdecode(img_array, 1)
-    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+        face_boxes = ecd.get_faceboxes(img)
+        
+        for x,y,w,h in face_boxes:
+            cv2.rectangle(img, (x,y), (x+w, y+h), color=(0, 255, 0), thickness=2)
 
-    embeddings = ecd.encode(img1)
-    person_info = []
-    for e in embeddings:
-        result = person.search(
-            e,
-            index_name=COSIN,
-            field=SEARCH_FIELD
-        )
-        if result:
-            person_info.append(result[0])
-        else:
-            person_info.append(None)
-    
-    st.session_state.person_info = person_info  # Save to session state
+        st.session_state['canvas'] = img
+    else:
+        st.session_state['canvas']= None
 
-    for i in range(len(face_boxes)):
-        x, y, w, h = face_boxes[i]
-        if person_info[i]:
-            cv2.putText(img1, person_info[i]['name'], (x, y), color=(0, 255, 0), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1)
-        else:
-            cv2.putText(img1, "Unknown", (x, y), color=(255, 0, 0), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1)
-    
-    img_canvas1.image(img1, caption="result")
-    progress_giver.empty()
-    st.table(person_info)
-
-if st.session_state.person_info:
-    st.session_state.choose_date = st.date_input("Enter date", value=st.session_state.choose_date, max_value=datetime.today().date())
-
-    if st.button("Submit"):
+def handle_submit():
+    if st.session_state['attendees']:
         attendance_data = []
-        for p in st.session_state.person_info:
+        for p in st.session_state['attendees']:
             if p and 'student_id' in p:
                 attendance_data.append({
                     'student_id': p['student_id'],
-                    'time_stamp': datetime.combine(st.session_state.choose_date, datetime.min.time()),
+                    'time_stamp': datetime.combine(st.session_state['date'], datetime.min.time()),
                 })
         if attendance_data:
             atd.add_many(attendance_data)
         st.success("Attendance added successfully.")
+    else:
+        st.error("No Attendee detected")
+    
+    
+if "canvas" not in st.session_state:
+    st.session_state['canvas'] = None
 
-elif check_btn:
-    st.error("Please take a picture first")
+if "attendees" not in st.session_state:
+    st.session_state['attendees'] = []
+
+if "submit_disable" not in st.session_state:
+    st.session_state['submit_disable'] = True
+
+if "date" not in st.session_state:
+    st.session_state['date'] = datetime.today().date()
+
+    
+
+st.header("Take Attendance")
+
+img_file_buffer = st.camera_input("Take a picture", on_change=handle_camera, key='camera')
+canvas =  st.empty() if st.session_state['canvas'] is None else st.image(st.session_state['canvas'])
+check_btn = st.button("Check", on_click=lambda : handle_check(img_file_buffer))
+progress_giver = st.empty()
+show_attendee = st.table(st.session_state['attendees']) if st.session_state['attendees'] else st.empty()
+calender = st.date_input("Enter Date", key='date', max_value=datetime.today().date(), disabled=st.session_state['submit_disable'])
+submit_btn = st.button("Submit", disabled=st.session_state['submit_disable'], on_click=handle_submit)
+
+
+
+
+

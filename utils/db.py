@@ -35,7 +35,7 @@ class PersonCollection:
         query = {
             "$vectorSearch": {
                 "index": index_name,
-                "limit": 4,
+                "limit": 1,
                 "numCandidates": 100,
                 "path": field,
                 "queryVector": embedding,
@@ -44,7 +44,7 @@ class PersonCollection:
 
         get_fields = {
             "$project": {
-                '_id' : 1,
+                '_id' : 0,
                 'name' : 1,
                 'student_id' : 1,
                 "search_score": { "$meta": "vectorSearchScore" }
@@ -96,7 +96,11 @@ class Attendance:
 
             for row in rows:
                 if "time_stamp" in row and "student_id" in row and not self.check_one(**row): 
-                    verified_rows.append({'time_stamp': row['time_stamp'], "student_id":row['student_id']})
+                    verified_rows.append({
+                        'time_stamp': row['time_stamp'], 
+                        "student_id": row['student_id'],
+                        "taken_on": datetime.now()
+                    })
             
             if verified_rows:
                 self.collection.insert_many(verified_rows)
@@ -110,7 +114,7 @@ class Attendance:
         try:
             ed_datetime = datetime.combine(curr_datetime.date(), datetime.max.time())
             st_datetime = datetime.combine(ed_datetime.date(), datetime.min.time()) + timedelta(days=-n_days+1)
-            res = self.collection.find({"student_id": student_id, "time_stamp": {'$gte': st_datetime, '$lte': ed_datetime}}, {'_id': 0, 'time_stamp': 1})
+            res = self.collection.find({"student_id": student_id, "time_stamp": {'$gte': st_datetime, '$lte': ed_datetime}}, {'_id': 0, 'time_stamp': 1, 'taken_on': 1})
             res = list(res)
             percent = (len(res) / n_days) * 100
             return res, percent
